@@ -130,8 +130,11 @@ struct ContentView: View {
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
 
+        // Working directory: CLAUDE_LAUNCHER_DIR env var, or ~/.claude-launcher-dir file, or $HOME
+        let workDir = Self.resolveWorkingDirectory()
+
         process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        process.arguments = ["-l", "-c", "unset CLAUDECODE; exec claude -p \(shellEscape(text)) --output-format text --verbose"]
+        process.arguments = ["-l", "-c", "unset CLAUDECODE; cd \(shellEscape(workDir)); exec claude -p \(shellEscape(text)) --output-format text --verbose"]
         process.standardOutput = stdoutPipe
         process.standardError = stderrPipe
         process.standardInput = FileHandle.nullDevice
@@ -213,6 +216,23 @@ struct ContentView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             panel?.resizeToFitContent()
         }
+    }
+
+    /// Resolve working directory: env var > dotfile > $HOME
+    private static func resolveWorkingDirectory() -> String {
+        // 1. CLAUDE_LAUNCHER_DIR env var
+        if let dir = ProcessInfo.processInfo.environment["CLAUDE_LAUNCHER_DIR"],
+           !dir.isEmpty {
+            return dir
+        }
+        // 2. ~/.claude-launcher-dir file (single line, path)
+        let dotfile = NSHomeDirectory() + "/.claude-launcher-dir"
+        if let contents = try? String(contentsOfFile: dotfile, encoding: .utf8) {
+            let path = contents.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !path.isEmpty { return path }
+        }
+        // 3. Default to home
+        return NSHomeDirectory()
     }
 
     private func markdownAttributedString(from text: String) -> AttributedString {

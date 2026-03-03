@@ -54,6 +54,24 @@ cp -R ClaudeLauncher.app /Applications/
 codesign -f -s - /Applications/ClaudeLauncher.app
 ```
 
+## Working directory (project context)
+
+Claude Code picks up `CLAUDE.md` from whatever directory it runs in. By default, Claude Launcher runs from `$HOME`. To point it at a specific project:
+
+**Option 1: Dotfile (recommended)**
+
+```bash
+echo "$HOME/path/to/your/project" > ~/.claude-launcher-dir
+```
+
+**Option 2: Environment variable**
+
+```bash
+export CLAUDE_LAUNCHER_DIR="$HOME/path/to/your/project"
+```
+
+The dotfile is simpler for Login Items since environment variables don't persist across app launches. Resolution order: `CLAUDE_LAUNCHER_DIR` env var > `~/.claude-launcher-dir` file > `$HOME`.
+
 ## How it works
 
 Four files, one dependency:
